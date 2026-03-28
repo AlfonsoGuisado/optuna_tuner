@@ -1,0 +1,15 @@
+{
+    "classification": {
+        "f1_micro": { "sklearn_scoring": "f1_micro", "direction": "maximize" },
+        "f1_macro": { "sklearn_scoring": "f1_macro", "direction": "maximize" },
+        "f1_weighted": { "sklearn_scoring": "f1_weighted", "direction": "maximize" },
+        "accuracy": { "sklearn_scoring": "accuracy", "direction": "maximize" },
+        "roc_auc": { "sklearn_scoring": "roc_auc", "direction": "maximize" },
+        "roc_auc_ovr": { "sklearn_scoring": "roc_auc_ovr", "direction": "maximize" }
+    },
+    "regression": {
+        "neg_rmse": { "sklearn_scoring": "neg_root_mean_squared_error", "direction": "maximize" },
+        "neg_mae":{ "sklearn_scoring": "neg_mean_absolute_error", "direction": "maximize" },
+        "r2": { "sklearn_scoring": "r2", "direction": "maximize" }
+    }
+}

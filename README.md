@@ -8,9 +8,13 @@ Clone the repo, install it with a single command, and you’ll have `tune()` ava
 ## 📁 Repository structure
 
 optuna_tuner/
+
 ├── optuna_tuner/
+
 │   ├── assets/
+
 │   │   ├── metrics.json          ← métricas disponibles y su configuración
+
 │   │   └── search_spaces.json    ← rangos de búsqueda de cada modelo
 │   ├── models/
 │   │   ├── __init__.py

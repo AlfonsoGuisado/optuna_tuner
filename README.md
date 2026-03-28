@@ -9,23 +9,23 @@ Clone the repo, install it with a single command, and you’ll have `tune()` ava
 
 optuna_tuner/
 ├── optuna_tuner/
-│ ├── assets/
-│ │ ├── metrics.json ← available metrics and their configuration
-│ │ └── search_spaces.json ← search ranges for each model
-│ ├── models/
-│ │ ├── init.py
-│ │ ├── builder.py ← reads JSON files and builds parameters for Optuna
-│ │ ├── classifiers.py ← classifiers registry
-│ │ └── regressors.py ← regressors registry
-│ ├── init.py ← public API: tune(), list_models(), list_metrics()
-│ ├── callbacks.py ← console progress for each trial
-│ ├── metrics.py ← loads metrics.json
-│ └── tuner.py ← main function tune()
+│   ├── assets/
+│   │   ├── metrics.json          ← métricas disponibles y su configuración
+│   │   └── search_spaces.json    ← rangos de búsqueda de cada modelo
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── builder.py            ← lee los JSON y construye los parámetros para Optuna
+│   │   ├── classifiers.py        ← registro de clasificadores
+│   │   └── regressors.py         ← registro de regresores
+│   ├── __init__.py               ← API pública: tune(), list_models(), list_metrics()
+│   ├── callbacks.py              ← progreso por consola de cada trial
+│   ├── metrics.py                ← carga metrics.json
+│   └── tuner.py                  ← función principal tune()
 ├── examples/
-│ ├── ejemplo_clasificacion.py
-│ └── ejemplo_regresion.py
+│   ├── ejemplo_clasificacion.py
+│   └── ejemplo_regresion.py
 ├── tests/
-│ └── test_tuner.py
+│   └── test_tuner.py
 ├── setup.py
 ├── requirements.txt
 └── .gitignore
@@ -46,8 +46,10 @@ optuna_tuner/
 
 ```bash
 pip install git+https://github.com/AlfonsoGuisado/optuna_tuner.git
+```
 
 With boosting libraries (XGBoost, LightGBM, CatBoost):
 
 ```bash
 pip install "git+https://github.com/AlfonsoGuisado/optuna_tuner.git#egg=optuna_tuner[boosting]"
+```

@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 import numpy as np
 
-from optuna_tuner import tune
+from optuna_tuner import tune_model
 
 # ── Datos ──────────────────────────────────────────────────────────────────────
 X_raw, y_raw = make_regression(
@@ -16,7 +16,7 @@ y = pd.Series(y_raw, name="target")
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # ── Afinar modelo ──────────────────────────────────────────────────────────────
-result = tune(
+result = tune_model(
     X=X_train,
     y=y_train,
     model_name="xgboost",

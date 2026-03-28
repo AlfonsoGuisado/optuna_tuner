@@ -37,17 +37,16 @@ def _params_svr(trial: optuna.Trial, random_state: int = 42) -> dict:
         params["degree"] = trial.suggest_int("degree", 2, 5)
     return params
 
-
 # ── Registro ───────────────────────────────────────────────────────────────────
 
 REGRESSORS = {
-    "randomforest":     {"class": RandomForestRegressor,     "params_fn": lambda trial, rs: build_params(trial, "randomforest",     "regression", rs)},
-    "extratrees":       {"class": ExtraTreesRegressor,       "params_fn": lambda trial, rs: build_params(trial, "extratrees",       "regression", rs)},
+    "randomforest": {"class": RandomForestRegressor, "params_fn": lambda trial, rs: build_params(trial, "randomforest", "regression", rs)},
+    "extratrees": {"class": ExtraTreesRegressor, "params_fn": lambda trial, rs: build_params(trial, "extratrees", "regression", rs)},
     "gradientboosting": {"class": GradientBoostingRegressor, "params_fn": lambda trial, rs: build_params(trial, "gradientboosting", "regression", rs)},
-    "lasso":            {"class": Lasso,                     "params_fn": lambda trial, rs: build_params(trial, "lasso",            "regression", rs)},
-    "ridge":            {"class": Ridge,                     "params_fn": lambda trial, rs: build_params(trial, "ridge",            "regression", rs)},
-    "elasticnet":       {"class": ElasticNet,                "params_fn": lambda trial, rs: build_params(trial, "elasticnet",       "regression", rs)},
-    "svr":              {"class": SVR,                       "params_fn": _params_svr},
+    "lasso": {"class": Lasso, "params_fn": lambda trial, rs: build_params(trial, "lasso", "regression", rs)},
+    "ridge": {"class": Ridge, "params_fn": lambda trial, rs: build_params(trial, "ridge", "regression", rs)},
+    "elasticnet": {"class": ElasticNet, "params_fn": lambda trial, rs: build_params(trial, "elasticnet", "regression", rs)},
+    "svr": {"class": SVR, "params_fn": _params_svr},
 }
 
 if _HAS_XGB:

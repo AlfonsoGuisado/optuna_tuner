@@ -4,12 +4,21 @@
         "f1_macro": { "sklearn_scoring": "f1_macro", "direction": "maximize" },
         "f1_weighted": { "sklearn_scoring": "f1_weighted", "direction": "maximize" },
         "accuracy": { "sklearn_scoring": "accuracy", "direction": "maximize" },
+        "balanced_accuracy": { "sklearn_scoring": "balanced_accuracy", "direction": "maximize" },
         "roc_auc": { "sklearn_scoring": "roc_auc", "direction": "maximize" },
-        "roc_auc_ovr": { "sklearn_scoring": "roc_auc_ovr", "direction": "maximize" }
+        "roc_auc_ovr": { "sklearn_scoring": "roc_auc_ovr", "direction": "maximize" },
+        "precision_macro": { "sklearn_scoring": "precision_macro", "direction": "maximize" },
+        "precision_weighted": { "sklearn_scoring": "precision_weighted", "direction": "maximize" },
+        "recall_macro": { "sklearn_scoring": "recall_macro", "direction": "maximize" },
+        "recall_weighted": { "sklearn_scoring": "recall_weighted", "direction": "maximize" }
     },
     "regression": {
         "neg_rmse": { "sklearn_scoring": "neg_root_mean_squared_error", "direction": "maximize" },
-        "neg_mae":{ "sklearn_scoring": "neg_mean_absolute_error", "direction": "maximize" },
+        "neg_mae": { "sklearn_scoring": "neg_mean_absolute_error", "direction": "maximize" },
+        "neg_mse": { "sklearn_scoring": "neg_mean_squared_error", "direction": "maximize" },
+        "neg_mape": { "sklearn_scoring": "neg_mean_absolute_percentage_error", "direction": "maximize" },
+        "neg_msle": { "sklearn_scoring": "neg_mean_squared_log_error", "direction": "maximize" },
+        "neg_medae": { "sklearn_scoring": "neg_median_absolute_error", "direction": "maximize" },
         "r2": { "sklearn_scoring": "r2", "direction": "maximize" }
     }
 }

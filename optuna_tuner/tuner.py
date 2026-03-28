@@ -16,7 +16,7 @@ optuna.logging.set_verbosity(optuna.logging.WARNING)
 warnings.filterwarnings("ignore")
 
 
-def tune(
+def tune_model(
     X: pd.DataFrame,
     y: pd.Series | np.ndarray,
     model_name: str,

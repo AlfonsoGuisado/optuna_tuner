@@ -1,11 +1,11 @@
-from .tuner import tune_model
+from .tuner import model_tune
 from .models import CLASSIFIERS, REGRESSORS
 from .metrics import CLASSIFICATION_METRICS, REGRESSION_METRICS
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 __all__ = [
-    "tune_model",
+    "model_tune",
     "CLASSIFIERS",
     "REGRESSORS",
     "CLASSIFICATION_METRICS",
@@ -16,24 +16,24 @@ __all__ = [
 
 
 def list_models(task: str | None = None) -> None:
-    """Muestra los modelos disponibles por tarea."""
+    """Shows available models by task."""
     if task is None or task == "classification":
-        print("── Clasificación ──")
+        print("── Classification ──")
         for m in sorted(CLASSIFIERS.keys()):
             print(f"  {m}")
     if task is None or task == "regression":
-        print("── Regresión ──")
+        print("── Regression ──")
         for m in sorted(REGRESSORS.keys()):
             print(f"  {m}")
 
 
 def list_metrics(task: str | None = None) -> None:
-    """Muestra las métricas disponibles por tarea."""
+    """Shows available metrics by task."""
     if task is None or task == "classification":
-        print("── Clasificación ──")
+        print("── Classification ──")
         for m in CLASSIFICATION_METRICS:
             print(f"  {m}")
     if task is None or task == "regression":
-        print("── Regresión ──")
+        print("── Regression ──")
         for m in REGRESSION_METRICS:
             print(f"  {m}")

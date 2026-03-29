@@ -16,46 +16,50 @@ optuna.logging.set_verbosity(optuna.logging.WARNING)
 warnings.filterwarnings("ignore")
 
 
-def tune_model(
+def model_tune(
     X: pd.DataFrame,
     y: pd.Series | np.ndarray,
     model_name: str,
     task: str,
     n_trials: int,
+    model_params: dict,
     metric: str | None = None,
     cv_folds: int = 5,
     random_state: int = 42,
     verbose: bool = True,
 ) -> dict[str, Any]:
     """
-    Busca los mejores hiperparámetros para el modelo indicado usando Optuna.
+    Searches for the best hyperparameters for the given model using Optuna.
 
-    Parámetros
+    Parameters
     ----------
-    X            : DataFrame de features de entrenamiento
-    y            : Serie o array de labels / target
-    model_name   : 'randomforest', 'xgboost', 'catboost', 'lightgbm', ...
-    task         : 'classification' o 'regression'
-    metric       : métrica a optimizar (si None usa la default de cada tarea)
-    n_trials     : número de trials de Optuna
-    cv_folds     : número de folds para cross-validation (default 5)
-    random_state : semilla aleatoria (default 42)
-    verbose      : muestra progreso en consola (default True)
+    X            : Training features DataFrame
+    y            : Labels or target Series / array
+    model_name   : Model name — 'randomforest', 'xgboost', 'catboost', etc.
+    task         : 'classification' or 'regression'
+    n_trials     : Number of Optuna trials
+    model_params : Fixed parameters passed directly to the model, not searched by Optuna.
+                   Pass an empty dict {} if no fixed params are needed.
+                   Example: {"objective": "multi:softmax", "num_class": 3}
+    metric       : Metric to optimize (uses task default if not specified)
+    cv_folds     : Number of cross-validation folds (default: 5)
+    random_state : Random seed (default: 42)
+    verbose      : Show progress in console (default: True)
 
-    Retorna
+    Returns
     -------
-    dict con:
-        best_params  – hiperparámetros óptimos listos para usar
-        best_value   – mejor score obtenido
-        best_model   – instancia del modelo con los mejores params
-        study        – objeto optuna.Study completo
-        metric       – métrica usada
+    dict with keys:
+        best_params  - best hyperparameters found
+        best_value   - best score obtained
+        best_model   - model instance configured with best params
+        study        - complete optuna.Study object
+        metric       - metric used
     """
 
-    # ── Validaciones ───────────────────────────────────────────────────────────
+    # ── Validations ────────────────────────────────────────────────────────────
     task = task.lower().strip()
     if task not in ("classification", "regression"):
-        raise ValueError(f"task debe ser 'classification' o 'regression', no '{task}'.")
+        raise ValueError(f"task must be 'classification' or 'regression', not '{task}'.")
 
     model_key = model_name.lower().replace(" ", "").replace("_", "")
 
@@ -73,15 +77,15 @@ def tune_model(
     if model_key not in registry:
         available = ", ".join(sorted(registry.keys()))
         raise ValueError(
-            f"Modelo '{model_name}' no encontrado para '{task}'.\n"
-            f"Disponibles: {available}"
+            f"Model '{model_name}' not found for task '{task}'.\n"
+            f"Available: {available}"
         )
 
     metric = metric or default_metric
     if metric not in valid_metrics:
         raise ValueError(
-            f"Métrica '{metric}' no válida para '{task}'.\n"
-            f"Válidas: {', '.join(valid_metrics.keys())}"
+            f"Metric '{metric}' not valid for '{task}'.\n"
+            f"Valid options: {', '.join(valid_metrics.keys())}"
         )
 
     sklearn_scoring = valid_metrics[metric]["sklearn_scoring"]
@@ -91,6 +95,7 @@ def tune_model(
     # ── Objective ──────────────────────────────────────────────────────────────
     def objective(trial: optuna.Trial) -> float:
         params = model_entry["params_fn"](trial, random_state)
+        params = {**params, **model_params}
         model  = model_entry["class"](**params)
         scores = cross_val_score(model, X, y, cv=cv, scoring=sklearn_scoring, n_jobs=-1)
         return float(scores.mean())
@@ -108,9 +113,9 @@ def tune_model(
         show_progress_bar=False,
     )
 
-    # ── Resultado ──────────────────────────────────────────────────────────────
+    # ── Result ─────────────────────────────────────────────────────────────────
     best_params = study.best_params
-    best_model  = model_entry["class"](**best_params)
+    best_model  = model_entry["class"](**{**best_params, **model_params})
 
     if verbose:
         _print_results(study, metric)
@@ -124,14 +129,14 @@ def tune_model(
     }
 
 
-# ── Helpers de consola ─────────────────────────────────────────────────────────
+# ── Console helpers ────────────────────────────────────────────────────────────
 
 def _print_header(model_name, task, metric, n_trials, cv_folds):
     sep = "─" * 55
     print(f"\n{sep}")
-    print(f"  Modelo  : {model_name}")
-    print(f"  Tarea   : {task}")
-    print(f"  Métrica : {metric}")
+    print(f"  Model   : {model_name}")
+    print(f"  Task    : {task}")
+    print(f"  Metric  : {metric}")
     print(f"  Trials  : {n_trials}  |  CV folds: {cv_folds}")
     print(f"{sep}")
 
@@ -139,8 +144,8 @@ def _print_header(model_name, task, metric, n_trials, cv_folds):
 def _print_results(study: optuna.Study, metric: str):
     sep = "─" * 55
     print(f"\n{sep}")
-    print(f"  Mejor {metric}: {study.best_value:.6f}")
-    print(f"  Mejores hiperparámetros:")
+    print(f"  Best {metric}: {study.best_value:.6f}")
+    print(f"  Best hyperparameters:")
     for k, v in study.best_params.items():
         print(f"    {k}: {v}")
     print(f"{sep}\n")

@@ -16,7 +16,7 @@ optuna.logging.set_verbosity(optuna.logging.WARNING)
 warnings.filterwarnings("ignore")
 
 
-def tune_model(
+def model_tune(
     X: pd.DataFrame,
     y: pd.Series | np.ndarray,
     model_name: str,
@@ -27,6 +27,9 @@ def tune_model(
     cv_folds: int = 5,
     random_state: int = 42,
     verbose: bool = True,
+    study_name: str | None = None,
+    storage: str | None = None,
+    timeout: int | None = None,
 ) -> dict[str, Any]:
     """
     Searches for the best hyperparameters for the given model using Optuna.
@@ -45,6 +48,13 @@ def tune_model(
     cv_folds     : Number of cross-validation folds (default: 5)
     random_state : Random seed (default: 42)
     verbose      : Show progress in console (default: True)
+    study_name   : Name for the Optuna study. Required if storage is used.
+                   If the study already exists it resumes from where it left off.
+                   Example: "rf_classification_v1"
+    storage      : Path to a SQLite database to persist trials on disk.
+                   If the process crashes, re-running with the same study_name
+                   and storage will resume automatically.
+                   Example: "sqlite:///optuna_studies.db"
 
     Returns
     -------
@@ -101,17 +111,33 @@ def tune_model(
         return float(scores.mean())
 
     # ── Study ──────────────────────────────────────────────────────────────────
-    study = optuna.create_study(direction=direction)
+    _study_name = study_name or f"{model_name}_{task}"
+
+    study = optuna.create_study(
+        direction=direction,
+        study_name=_study_name,
+        storage=storage,
+        load_if_exists=True,      # ← si ya existe lo retoma, no lo sobreescribe
+    )
+
+    completed = len([t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE])
+    remaining = n_trials - completed
 
     if verbose:
-        _print_header(model_name, task, metric, n_trials, cv_folds)
+        _print_header(model_name, task, metric, n_trials, cv_folds, completed)
 
-    study.optimize(
-        objective,
-        n_trials=n_trials,
-        callbacks=[ProgressCallback(n_trials, verbose=verbose)],
-        show_progress_bar=False,
-    )
+    if remaining <= 0:
+        if verbose:
+            print(f"  Study already has {completed} completed trials. Nothing to run.")
+            print(f"  To run more trials increase n_trials above {completed}.\n")
+    else:
+        study.optimize(
+            objective,
+            n_trials=remaining,
+            timeout=timeout,
+            callbacks=[ProgressCallback(n_trials, completed, verbose=verbose)],
+            show_progress_bar=False,
+        )
 
     # ── Result ─────────────────────────────────────────────────────────────────
     best_params = study.best_params
@@ -131,13 +157,15 @@ def tune_model(
 
 # ── Console helpers ────────────────────────────────────────────────────────────
 
-def _print_header(model_name, task, metric, n_trials, cv_folds):
+def _print_header(model_name, task, metric, n_trials, cv_folds, completed):
     sep = "─" * 55
     print(f"\n{sep}")
     print(f"  Model   : {model_name}")
     print(f"  Task    : {task}")
     print(f"  Metric  : {metric}")
     print(f"  Trials  : {n_trials}  |  CV folds: {cv_folds}")
+    if completed > 0:
+        print(f"  Resuming from trial {completed + 1} ({completed} already completed)")
     print(f"{sep}")
 
 

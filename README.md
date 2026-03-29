@@ -1,7 +1,9 @@
 # 🔍 optuna_tuner
 
-Library for automatic hyperparameter search using **Optuna**.  
-Install it with a single command and have `tune_model()` available in any project, both locally and in the cloud (Colab, Kaggle...).
+Personal library for automatic hyperparameter search using **Optuna**.  
+Install it with a single command and have `model_tune()` available in any project, both locally and in the cloud (Colab, Kaggle...).
+
+> **Current version: 0.2.4**
 
 ---
 
@@ -15,13 +17,13 @@ optuna_tuner/
 │   │   └── search_spaces.json    ← search ranges for each model
 │   ├── models/
 │   │   ├── __init__.py
-│   │   ├── builder.py            ← reads JSONs and builds parameters for Optuna
+│   │   ├── builder.py            ← reads JSONs and builds Optuna parameter spaces
 │   │   ├── classifiers.py        ← classifier registry
 │   │   └── regressors.py         ← regressor registry
-│   ├── __init__.py               ← public API: tune_model(), list_models(), list_metrics()
+│   ├── __init__.py               ← public API: model_tune(), list_models(), list_metrics()
 │   ├── callbacks.py              ← console progress per trial
 │   ├── metrics.py                ← loads metrics.json
-│   └── tuner.py                  ← main tune_model() function
+│   └── tuner.py                  ← main model_tune() function
 ├── examples/
 │   ├── ejemplo_clasificacion.py
 │   └── ejemplo_regresion.py
@@ -34,9 +36,9 @@ optuna_tuner/
 
 **What does each part do?**
 
-- `assets/` — JSON configuration files. These are the only files you need to edit if you want to change search ranges or add metrics, without touching any Python code.
-- `models/` — contains available classifiers and regressors. To add a new model, only this module needs to be modified.
-- `tuner.py` — this is where `tune_model()` lives, the core of the library.
+- `assets/` — JSON configuration files. The only files you need to edit to change search ranges or add new metrics, without touching any Python code.
+- `models/` — contains all available classifiers and regressors. To add a new model, only this module needs to be modified.
+- `tuner.py` — where `model_tune()` lives, the core of the library.
 - `callbacks.py` — controls what gets printed to the console during the search.
 
 ---
@@ -55,7 +57,7 @@ With boosting libraries (XGBoost, LightGBM, CatBoost):
 pip install "git+https://github.com/AlfonsoGuisado/optuna_tuner.git#egg=optuna_tuner[boosting]"
 ```
 
-### Cloud (Google Colab, SageMaker... etc)
+### Cloud (Google Colab, Kaggle)
 
 ```python
 !pip install git+https://github.com/AlfonsoGuisado/optuna_tuner.git
@@ -72,15 +74,21 @@ pip install --upgrade git+https://github.com/AlfonsoGuisado/optuna_tuner.git
 ## 🚀 Basic Usage
 
 ```python
-from optuna_tuner import tune_model
+from optuna_tuner import model_tune
 
-result = tune_model(
+result = model_tune(
     X=X_train,
     y=y_train,
     model_name="xgboost",
     task="classification",
     metric="f1_micro",
     n_trials=100,
+    model_params={
+        "objective":   "multi:softmax",
+        "num_class":   y_train.nunique(),
+        "eval_metric": "mlogloss",
+        "tree_method": "hist",
+    }
 )
 
 print(result["best_params"])   # best hyperparameters found
@@ -89,27 +97,30 @@ print(result["best_value"])    # best score obtained
 
 ---
 
-## 📖 `tune_model()` Parameters
+## 📖 `model_tune()` Parameters
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
 | `X` | DataFrame | ✅ | — | Training features |
 | `y` | Series / array | ✅ | — | Labels or target |
-| `model_name` | str | ✅ | — | Model name (see model table) |
+| `model_name` | str | ✅ | — | Model name (see model table below) |
 | `task` | str | ✅ | — | `'classification'` or `'regression'` |
 | `n_trials` | int | ✅ | — | Number of Optuna trials |
-| `model_params` | dict | ✅ | — | Fixed model parameters (see dedicated section) |
+| `model_params` | dict | ✅ | — | Fixed model parameters not searched by Optuna. Pass `{}` if none needed |
 | `metric` | str | ❌ | auto | Metric to optimize |
 | `cv_folds` | int | ❌ | `5` | Number of cross-validation folds |
 | `random_state` | int | ❌ | `42` | Random seed |
-| `verbose` | bool | ❌ | `True` | Show progress in console |
+| `verbose` | bool | ❌ | `True` | Show trial progress in console |
+| `study_name` | str | ❌ | auto | Name for the Optuna study. Required when using `storage` |
+| `storage` | str | ❌ | `None` | SQLite path to persist trials on disk and resume if the process crashes |
+| `timeout` | int | ❌ | `None` | Maximum search time in seconds. Stops after this time regardless of remaining trials |
 
 ---
 
-## 📦 What `tune_model()` Returns
+## 📦 What `model_tune()` Returns
 
 ```python
-result = tune_model(...)
+result = model_tune(...)
 
 result["best_params"]   # dict with the best hyperparameters, ready to use
 result["best_value"]    # best score obtained during the search
@@ -121,12 +132,80 @@ result["metric"]        # metric that was used
 ### Using the trained model
 
 ```python
-result = tune_model(X_train, y_train, model_name="xgboost", task="classification", n_trials=100)
+result = model_tune(...)
 
 best_model = result["best_model"]
 best_model.fit(X_train, y_train)
 y_pred = best_model.predict(X_test)
 ```
+
+---
+
+## 💾 Crash Recovery — Never Lose a Search Again
+
+If the process crashes or the kernel restarts mid-search, you can resume automatically from where it left off using `storage` and `study_name`:
+
+```python
+result = model_tune(
+    X=X_train,
+    y=y_train,
+    model_name="randomforest",
+    task="classification",
+    metric="f1_micro",
+    n_trials=50,
+    model_params={"class_weight": "balanced"},
+    study_name="rf_classification_v1",          # ← name of the study
+    storage="sqlite:///optuna_studies.db",       # ← file where trials are saved
+    verbose=True,
+)
+```
+
+If the process crashes and you re-run the exact same cell, Optuna will detect that `rf_classification_v1` already exists in the `.db` file, load the completed trials and **continue from where it left off**. No trial is lost.
+
+### Checking a saved study
+
+```python
+import optuna
+
+study = optuna.load_study(
+    study_name="rf_classification_v1",
+    storage="sqlite:///optuna_studies.db",
+)
+
+print(f"Completed trials : {len(study.trials)}")
+print(f"Best value       : {study.best_value:.6f}")
+print(f"Best params      : {study.best_params}")
+```
+
+---
+
+## ⏱️ Controlling Search Time
+
+Use `timeout` to set a maximum search duration in seconds. The search will stop after that time regardless of how many trials remain, and will always return the best result found so far:
+
+```python
+result = model_tune(
+    X=X_train,
+    y=y_train,
+    model_name="xgboost",
+    task="classification",
+    metric="f1_micro",
+    n_trials=50,
+    model_params={...},
+    study_name="xgb_clf_v1",
+    storage="sqlite:///optuna_studies.db",
+    timeout=3600,                               # ← stop after 1 hour no matter what
+    verbose=True,
+)
+```
+
+Recommended timeouts:
+
+| Dataset size | Recommended timeout |
+|---|---|
+| Small (< 10k rows) | 600–1800 seconds (10–30 min) |
+| Medium (10k–100k rows) | 1800–7200 seconds (30 min–2 hours) |
+| Large (> 100k rows) | 7200–18000 seconds (2–5 hours) |
 
 ---
 
@@ -228,26 +307,11 @@ print(json.dumps(SEARCH_SPACES["classification"]["xgboost"], indent=2))
 
 ## ⚙️ Fixed Model Parameters (`model_params`)
 
-Optuna searches for the best hyperparameters within the ranges defined in `search_spaces.json`, but some parameters **make no sense to search** because they are fixed based on your specific problem: the objective type, the model's internal metric, whether you have a GPU, whether classes are imbalanced, etc.
+Optuna searches for the best hyperparameters within the ranges defined in `search_spaces.json`, but some parameters **make no sense to search** because they are fixed based on your specific problem: the objective type, the internal metric, whether classes are imbalanced, etc.
 
-These parameters are passed via the `model_params` argument and take **priority** over any value found by Optuna.
+These are passed via `model_params` and take **priority** over any value found by Optuna.
 
-```python
-result = tune_model(
-    X=X_train,
-    y=y_train,
-    model_name="xgboost",
-    task="classification",
-    metric="f1_micro",
-    n_trials=100,
-    model_params={                       # ← fixed params, Optuna won't touch these
-        "objective":   "multi:softmax",
-        "num_class":   3,
-        "eval_metric": "mlogloss",
-        "tree_method": "hist",
-    }
-)
-```
+> **Note:** Internal logging parameters (`verbose`, `verbosity`, `silent`) are already handled automatically by the library for XGBoost, LightGBM and CatBoost. You never need to include them in `model_params`.
 
 ---
 
@@ -257,7 +321,7 @@ result = tune_model(
 ```python
 n_classes = y_train.nunique()
 # 2 classes  → binary problem
-# >2 classes → multiclass problem, you'll need num_class=n_classes in XGBoost and LightGBM
+# >2 classes → multiclass, you'll need num_class=n_classes in XGBoost and LightGBM
 ```
 
 **2. Are the classes balanced?**
@@ -284,7 +348,6 @@ model_params={
     "eval_metric": "logloss",           # internal evaluation metric
     "tree_method": "hist",              # fastest tree algorithm on CPU
     "n_jobs":      -1,                  # use all available cores
-    "verbosity":   0,                   # no internal XGBoost logs
 }
 ```
 
@@ -297,7 +360,6 @@ model_params={
     "eval_metric": "mlogloss",          # internal multiclass metric
     "tree_method": "hist",
     "n_jobs":      -1,
-    "verbosity":   0,
 }
 ```
 
@@ -306,17 +368,15 @@ model_params={
 model_params={
     "objective":   "reg:squarederror",      # MSE regression — most common
   # "objective":  "reg:absoluteerror",     # MAE regression — more robust to outliers
-  # "objective":  "reg:pseudohubererror",  # Huber regression — balance between MSE and MAE
+  # "objective":  "reg:pseudohubererror",  # Huber — balance between MSE and MAE
     "eval_metric": "rmse",
     "tree_method": "hist",
     "n_jobs":      -1,
-    "verbosity":   0,
 }
 ```
 
 **Imbalanced classes (binary only)**
 ```python
-# Automatically calculates the weight for the minority class
 model_params={
     "scale_pos_weight": (y_train == 0).sum() / (y_train == 1).sum(),
     "objective":        "binary:logistic",
@@ -328,7 +388,7 @@ model_params={
 **With GPU**
 ```python
 model_params={
-    "tree_method": "gpu_hist",          # greatly speeds up training
+    "tree_method": "gpu_hist",
     "objective":   "binary:logistic",   # or whichever fits your problem
 }
 ```
@@ -341,7 +401,6 @@ model_params={
 | `tree_method` | `hist` · `gpu_hist` · `exact` · `approx` | Tree building algorithm |
 | `scale_pos_weight` | float | Positive class weight — binary imbalanced only |
 | `n_jobs` | `-1` | Cores to use |
-| `verbosity` | `0` | Internal log level |
 
 ---
 
@@ -350,41 +409,38 @@ model_params={
 **Binary classification**
 ```python
 model_params={
-    "objective": "binary",              # binary classification
-    "metric":    "binary_logloss",      # internal metric
+    "objective": "binary",
+    "metric":    "binary_logloss",
     "n_jobs":    -1,
-    "verbose":   -1,                    # no internal logs
 }
 ```
 
 **Multiclass classification**
 ```python
 model_params={
-    "objective": "multiclass",          # multiclass classification
-    "num_class": y_train.nunique(),     # number of classes — REQUIRED for multiclass
-    "metric":    "multi_logloss",       # internal metric
+    "objective": "multiclass",
+    "num_class": y_train.nunique(),     # REQUIRED for multiclass
+    "metric":    "multi_logloss",
     "n_jobs":    -1,
-    "verbose":   -1,
 }
 ```
 
 **Regression**
 ```python
 model_params={
-    "objective": "regression",          # MSE regression — most common
-  # "objective": "regression_l1",      # MAE regression — more robust to outliers
-  # "objective": "huber",              # Huber regression — balance between MSE and MAE
+    "objective": "regression",          # MSE — most common
+  # "objective": "regression_l1",      # MAE — more robust to outliers
+  # "objective": "huber",              # Huber — balance between MSE and MAE
   # "objective": "mape",               # mean absolute percentage error
     "metric":    "rmse",
     "n_jobs":    -1,
-    "verbose":   -1,
 }
 ```
 
 **Imbalanced classes**
 ```python
 model_params={
-    "is_unbalance": True,               # automatic class weight adjustment
+    "is_unbalance": True,
   # alternative:
   # "class_weight": "balanced",
 }
@@ -395,10 +451,9 @@ model_params={
 | `objective` | `binary` · `multiclass` · `regression` · `regression_l1` · `huber` · `mape` | Problem type and loss function |
 | `num_class` | integer | Number of classes — only required for multiclass |
 | `metric` | `binary_logloss` · `multi_logloss` · `rmse` · `mae` · `auc` · `mape` | Internal evaluation metric |
-| `is_unbalance` | `True` / `False` | Automatic adjustment for imbalanced classes |
+| `is_unbalance` | `True` / `False` | Automatic class weight adjustment |
 | `class_weight` | `"balanced"` | Alternative to `is_unbalance` |
 | `n_jobs` | `-1` | Cores to use |
-| `verbose` | `-1` | No internal logs |
 
 ---
 
@@ -407,30 +462,27 @@ model_params={
 **Binary classification**
 ```python
 model_params={
-    "loss_function": "Logloss",         # binary loss function
-    "eval_metric":   "Logloss",         # evaluation metric
-    "verbose":       False,             # no internal logs
+    "loss_function": "Logloss",
+    "eval_metric":   "Logloss",
 }
 ```
 
 **Multiclass classification**
 ```python
 model_params={
-    "loss_function": "MultiClass",      # multiclass loss function
-    "eval_metric":   "Accuracy",        # evaluation metric
-    "verbose":       False,
+    "loss_function": "MultiClass",
+    "eval_metric":   "Accuracy",
 }
 ```
 
 **Regression**
 ```python
 model_params={
-    "loss_function": "RMSE",            # MSE regression — most common
-  # "loss_function": "MAE",            # MAE regression — more robust to outliers
-  # "loss_function": "Huber",          # Huber regression
+    "loss_function": "RMSE",            # MSE — most common
+  # "loss_function": "MAE",            # more robust to outliers
+  # "loss_function": "Huber",          # balance between MSE and MAE
   # "loss_function": "MAPE",           # percentage error
     "eval_metric":   "RMSE",
-    "verbose":       False,
 }
 ```
 
@@ -438,19 +490,19 @@ model_params={
 ```python
 # CatBoost natively handles categorical columns without prior encoding
 model_params={
-    "cat_features": [0, 2, 5],                              # by column index
-  # "cat_features": ["city", "product", "category"],        # or by name if using DataFrame
+    "cat_features":  [0, 2, 5],                          # by column index
+  # "cat_features":  ["city", "product", "category"],    # or by column name
     "loss_function": "MultiClass",
-    "verbose":       False,
+    "eval_metric":   "Accuracy",
 }
 ```
 
 **Imbalanced classes**
 ```python
 model_params={
-    "auto_class_weights": "Balanced",   # automatic per-class weight adjustment
+    "auto_class_weights": "Balanced",
     "loss_function":      "Logloss",
-    "verbose":            False,
+    "eval_metric":        "Logloss",
 }
 ```
 
@@ -458,22 +510,21 @@ model_params={
 |---|---|---|
 | `loss_function` | `Logloss` · `MultiClass` · `RMSE` · `MAE` · `Huber` · `MAPE` | Loss function |
 | `eval_metric` | `Logloss` · `Accuracy` · `RMSE` · `MAE` · `AUC` | Internal evaluation metric |
-| `cat_features` | list of indices or names | Categorical columns — CatBoost handles them natively |
-| `auto_class_weights` | `"Balanced"` | Automatic adjustment for imbalanced classes |
-| `verbose` | `False` | No internal logs |
+| `cat_features` | list of indices or names | Categorical columns — handled natively, no encoding needed |
+| `auto_class_weights` | `"Balanced"` | Automatic per-class weight adjustment |
 
 ---
 
 ### 🔴 RandomForest / ExtraTrees / GradientBoosting
 
-Sklearn **detects the problem type automatically** based on the `task` you pass to `tune_model()`. You only need `model_params` in special cases:
+Sklearn detects the problem type automatically based on the `task` you pass to `model_tune()`. You only need `model_params` in special cases:
 
 **Imbalanced classes**
 ```python
 # RandomForest and ExtraTrees
 model_params={
     "class_weight": "balanced",             # weights each class inversely to its frequency
-  # "class_weight": "balanced_subsample",   # same but recalculated for each tree
+  # "class_weight": "balanced_subsample",   # same but recalculated per tree
 }
 
 # GradientBoosting does not have class_weight
@@ -493,7 +544,7 @@ model_params={
 model_params={
     "probability":  True,               # required to use predict_proba()
     "class_weight": "balanced",         # imbalanced classes
-    "cache_size":   1000,               # kernel cache in MB — more = faster if you have RAM
+    "cache_size":   1000,               # kernel cache in MB — more = faster with large datasets
 }
 ```
 
@@ -526,7 +577,7 @@ model_params={
 | Parameter | Options | Description |
 |---|---|---|
 | `fit_intercept` | `True` / `False` | Fit intercept (default `True`) |
-| `positive` | `True` / `False` | Forces positive coefficients — useful when semantically meaningful |
+| `positive` | `True` / `False` | Forces positive coefficients |
 
 ---
 
@@ -539,7 +590,7 @@ import pandas as pd
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
-from optuna_tuner import tune_model
+from optuna_tuner import model_tune
 
 X_raw, y_raw = make_classification(
     n_samples=1000, n_features=20, n_classes=3, n_informative=10, random_state=42
@@ -548,7 +599,7 @@ X = pd.DataFrame(X_raw)
 y = pd.Series(y_raw)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-result = tune_model(
+result = model_tune(
     X=X_train,
     y=y_train,
     model_name="xgboost",
@@ -561,8 +612,10 @@ result = tune_model(
         "eval_metric": "mlogloss",
         "tree_method": "hist",
         "n_jobs":      -1,
-        "verbosity":   0,
-    }
+    },
+    study_name="xgb_clf_v1",
+    storage="sqlite:///optuna_studies.db",
+    timeout=3600,
 )
 
 model = result["best_model"]
@@ -578,14 +631,14 @@ from sklearn.datasets import make_regression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 import numpy as np
-from optuna_tuner import tune_model
+from optuna_tuner import model_tune
 
 X_raw, y_raw = make_regression(n_samples=1000, n_features=20, random_state=42)
 X = pd.DataFrame(X_raw)
 y = pd.Series(y_raw)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-result = tune_model(
+result = model_tune(
     X=X_train,
     y=y_train,
     model_name="lightgbm",
@@ -596,8 +649,10 @@ result = tune_model(
         "objective": "regression",
         "metric":    "rmse",
         "n_jobs":    -1,
-        "verbose":   -1,
-    }
+    },
+    study_name="lgb_reg_v1",
+    storage="sqlite:///optuna_studies.db",
+    timeout=1800,
 )
 
 model = result["best_model"]
@@ -605,6 +660,29 @@ model.fit(X_train, y_train)
 y_pred = model.predict(X_test)
 print(f"RMSE : {np.sqrt(mean_squared_error(y_test, y_pred)):.4f}")
 print(f"R²   : {r2_score(y_test, y_pred):.4f}")
+```
+
+### Imbalanced Multiclass with CatBoost
+
+```python
+from optuna_tuner import model_tune
+
+result = model_tune(
+    X=X_train,
+    y=y_train,
+    model_name="catboost",
+    task="classification",
+    metric="f1_micro",
+    n_trials=100,
+    model_params={
+        "loss_function":      "MultiClass",
+        "eval_metric":        "Accuracy",
+        "auto_class_weights": "Balanced",
+    },
+    study_name="catboost_clf_v1",
+    storage="sqlite:///optuna_studies.db",
+    timeout=3600,
+)
 ```
 
 ---

@@ -15,6 +15,9 @@ from .callbacks import ProgressCallback
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 warnings.filterwarnings("ignore")
 
+# Keys handled internally by the library — never passed by the user
+_INTERNAL_KEYS = {"verbose", "verbosity", "silent", "logging_level", "verbose_eval"}
+
 
 def tune_model(
     X: pd.DataFrame,
@@ -43,18 +46,18 @@ def tune_model(
     n_trials     : Number of Optuna trials
     model_params : Fixed parameters passed directly to the model, not searched by Optuna.
                    Pass an empty dict {} if no fixed params are needed.
+                   Note: verbose/silent keys are handled internally and will be ignored.
                    Example: {"objective": "multi:softmax", "num_class": 3}
     metric       : Metric to optimize (uses task default if not specified)
     cv_folds     : Number of cross-validation folds (default: 5)
     random_state : Random seed (default: 42)
-    verbose      : Show progress in console (default: True)
-    study_name   : Name for the Optuna study. Required if storage is used.
+    verbose      : Show trial progress in console (default: True)
+    study_name   : Name for the Optuna study. Required when using storage.
                    If the study already exists it resumes from where it left off.
-                   Example: "rf_classification_v1"
-    storage      : Path to a SQLite database to persist trials on disk.
-                   If the process crashes, re-running with the same study_name
-                   and storage will resume automatically.
+    storage      : SQLite path to persist trials on disk and resume if process crashes.
                    Example: "sqlite:///optuna_studies.db"
+    timeout      : Maximum search time in seconds. Stops after this time regardless
+                   of remaining trials and returns the best result found so far.
 
     Returns
     -------
@@ -74,12 +77,12 @@ def tune_model(
     model_key = model_name.lower().replace(" ", "").replace("_", "")
 
     if task == "classification":
-        registry = CLASSIFIERS
+        registry     = CLASSIFIERS
         valid_metrics = CLASSIFICATION_METRICS
         default_metric = "f1_micro"
         cv = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=random_state)
     else:
-        registry = REGRESSORS
+        registry     = REGRESSORS
         valid_metrics = REGRESSION_METRICS
         default_metric = "neg_rmse"
         cv = KFold(n_splits=cv_folds, shuffle=True, random_state=random_state)
@@ -102,10 +105,13 @@ def tune_model(
     direction       = valid_metrics[metric]["direction"]
     model_entry     = registry[model_key]
 
+    # ── Filter internal keys from model_params ─────────────────────────────────
+    clean_model_params = {k: v for k, v in model_params.items() if k not in _INTERNAL_KEYS}
+
     # ── Objective ──────────────────────────────────────────────────────────────
     def objective(trial: optuna.Trial) -> float:
         params = model_entry["params_fn"](trial, random_state)
-        params = {**params, **model_params}
+        params = {**params, **clean_model_params}
         model  = model_entry["class"](**params)
         scores = cross_val_score(model, X, y, cv=cv, scoring=sklearn_scoring, n_jobs=-1)
         return float(scores.mean())
@@ -117,7 +123,7 @@ def tune_model(
         direction=direction,
         study_name=_study_name,
         storage=storage,
-        load_if_exists=True,      # ← si ya existe lo retoma, no lo sobreescribe
+        load_if_exists=True,
     )
 
     completed = len([t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE])
@@ -141,7 +147,7 @@ def tune_model(
 
     # ── Result ─────────────────────────────────────────────────────────────────
     best_params = study.best_params
-    best_model  = model_entry["class"](**{**best_params, **model_params})
+    best_model  = model_entry["class"](**{**best_params, **clean_model_params})
 
     if verbose:
         _print_results(study, metric)

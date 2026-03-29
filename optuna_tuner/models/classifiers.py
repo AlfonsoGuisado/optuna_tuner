@@ -93,6 +93,5 @@ if _HAS_CAT:
         "params_fn": lambda trial, rs: {
             **build_params(trial, "catboost", "classification", rs),
             "verbose": False,
-            "silent":  True,
         }
     }

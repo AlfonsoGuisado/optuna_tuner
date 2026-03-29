@@ -98,11 +98,11 @@ print(result["best_value"])    # best score obtained
 | `model_name` | str | ✅ | — | Model name (see model table) |
 | `task` | str | ✅ | — | `'classification'` or `'regression'` |
 | `n_trials` | int | ✅ | — | Number of Optuna trials |
+| `model_params` | dict | ✅ | — | Fixed model parameters (see dedicated section) |
 | `metric` | str | ❌ | auto | Metric to optimize |
 | `cv_folds` | int | ❌ | `5` | Number of cross-validation folds |
 | `random_state` | int | ❌ | `42` | Random seed |
 | `verbose` | bool | ❌ | `True` | Show progress in console |
-| `model_params` | dict | ❌ | `None` | Fixed model parameters (see dedicated section) |
 
 ---
 

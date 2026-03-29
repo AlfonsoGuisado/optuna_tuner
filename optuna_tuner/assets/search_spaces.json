@@ -1,8 +1,8 @@
 {
     "classification": {
         "randomforest": {
-            "n_estimators": { "type": "int", "low": 100, "high": 2000 },
-            "max_depth": { "type": "int", "low": 3, "high": 50 },
+            "n_estimators": { "type": "int", "low": 50, "high": 1000 },
+            "max_depth": { "type": "int", "low": 3, "high": 25 },
             "min_samples_split": { "type": "int", "low": 2, "high": 20 },
             "min_samples_leaf": { "type": "int", "low": 1, "high": 20 },
             "max_features": { "type": "float", "low": 0.1, "high": 1.0 },
@@ -10,8 +10,8 @@
             "bootstrap": { "type": "categorical", "choices": [true] }
         },
         "extratrees": {
-            "n_estimators": { "type": "int", "low": 100, "high": 2000 },
-            "max_depth": { "type": "int", "low": 3, "high": 50 },
+            "n_estimators": { "type": "int", "low": 50, "high": 1000 },
+            "max_depth": { "type": "int", "low": 3, "high": 25 },
             "min_samples_split": { "type": "int", "low": 2, "high": 20 },
             "min_samples_leaf": { "type": "int", "low": 1, "high": 20 },
             "max_features": { "type": "float", "low": 0.1, "high": 1.0 },
@@ -19,48 +19,48 @@
             "bootstrap": { "type": "categorical", "choices": [true] }
         },
         "gradientboosting": {
-            "n_estimators": { "type": "int", "low": 50, "high": 2000 },
+            "n_estimators": { "type": "int", "low": 50, "high": 1000 },
             "learning_rate": { "type": "float", "low": 1e-4, "high": 0.5,  "log": true },
-            "max_depth": { "type": "int", "low": 2, "high": 15 },
+            "max_depth": { "type": "int", "low": 2, "high": 10 },
             "subsample": { "type": "float", "low": 0.4, "high": 1.0 },
             "max_features": { "type": "float", "low": 0.1, "high": 1.0 },
             "min_samples_split": { "type": "int", "low": 2, "high": 20 },
             "min_samples_leaf": { "type": "int", "low": 1, "high": 20 }
         },
         "xgboost": {
-            "n_estimators": { "type": "int", "low": 50, "high": 2000 },
-            "max_depth": { "type": "int", "low": 2, "high": 15 },
+            "n_estimators": { "type": "int", "low": 50, "high": 1000 },
+            "max_depth": { "type": "int", "low": 2, "high": 12 },
             "learning_rate": { "type": "float", "low": 1e-4, "high": 0.5,  "log": true },
             "subsample": { "type": "float", "low": 0.4, "high": 1.0 },
             "colsample_bytree": { "type": "float", "low": 0.3, "high": 1.0 },
             "colsample_bylevel": { "type": "float", "low": 0.3, "high": 1.0 },
-            "min_child_weight": { "type": "int", "low": 1, "high": 20 },
-            "gamma": { "type": "float", "low": 0.0, "high": 10.0 },
+            "min_child_weight": { "type": "int", "low": 1, "high": 10 },
+            "gamma": { "type": "float", "low": 0.0, "high": 6.0 },
             "reg_alpha": { "type": "float", "low": 1e-8, "high": 10.0, "log": true },
             "reg_lambda": { "type": "float", "low": 1e-8, "high": 10.0, "log": true },
             "max_delta_step": { "type": "int", "low": 0, "high": 10 }
         },
         "lightgbm": {
-            "n_estimators": { "type": "int", "low": 50, "high": 2000 },
-            "max_depth": { "type": "int", "low": 3, "high": 20 },
+            "n_estimators": { "type": "int", "low": 50, "high": 1000 },
+            "max_depth": { "type": "int", "low": 2, "high": 12 },
             "learning_rate": { "type": "float", "low": 1e-4, "high": 0.5,  "log": true },
-            "num_leaves": { "type": "int", "low": 20, "high": 500 },
+            "num_leaves": { "type": "int", "low": 20, "high": 250 },
             "subsample": { "type": "float", "low": 0.4, "high": 1.0 },
             "colsample_bytree": { "type": "float", "low": 0.3, "high": 1.0 },
-            "min_child_samples": { "type": "int", "low": 5, "high": 200 },
+            "min_child_samples": { "type": "int", "low": 5, "high": 120 },
             "reg_alpha": { "type": "float", "low": 1e-8, "high": 10.0, "log": true },
             "reg_lambda": { "type": "float", "low": 1e-8, "high": 10.0, "log": true },
             "min_split_gain": { "type": "float", "low": 0.0, "high": 1.0 },
-            "max_bin": { "type": "int", "low": 64, "high": 512 }
+            "max_bin": { "type": "int", "low": 64, "high": 256 }
         },
         "catboost": {
-            "iterations": { "type": "int", "low": 100,  "high": 2000 },
-            "depth": { "type": "int", "low": 3, "high": 12 },
+            "iterations": { "type": "int", "low": 50, "high": 1000 },
+            "depth": { "type": "int", "low": 2, "high": 12 },
             "learning_rate": { "type": "float", "low": 1e-4, "high": 0.5,  "log": true },
             "l2_leaf_reg": { "type": "float", "low": 1e-3, "high": 10.0, "log": true },
-            "bagging_temperature": { "type": "float", "low": 0.0,  "high": 2.0 },
-            "border_count": { "type": "int", "low": 32,   "high": 512 },
-            "random_strength": { "type": "float", "low": 0.0,  "high": 10.0 }
+            "bagging_temperature": { "type": "float", "low": 0.0,  "high": 1.5 },
+            "border_count": { "type": "int", "low": 32,   "high": 255 },
+            "random_strength": { "type": "float", "low": 0.0,  "high": 6.0 }
         },
         "knn": {
             "n_neighbors": { "type": "int", "low": 1, "high": 50 },
@@ -71,8 +71,8 @@
 
     "regression": {
         "randomforest": {
-            "n_estimators": { "type": "int", "low": 100, "high": 2000 },
-            "max_depth": { "type": "int", "low": 3, "high": 50 },
+            "n_estimators": { "type": "int", "low": 50, "high": 1000 },
+            "max_depth": { "type": "int", "low": 2, "high": 25 },
             "min_samples_split": { "type": "int", "low": 2, "high": 20 },
             "min_samples_leaf": { "type": "int", "low": 1, "high": 20 },
             "max_features": { "type": "float", "low": 0.1, "high": 1.0 },
@@ -80,8 +80,8 @@
             "bootstrap": { "type": "categorical", "choices": [true] }
         },
         "extratrees": {
-            "n_estimators": { "type": "int", "low": 100, "high": 2000 },
-            "max_depth": { "type": "int", "low": 3, "high": 50 },
+            "n_estimators": { "type": "int", "low": 50, "high": 1000 },
+            "max_depth": { "type": "int", "low": 2, "high": 25 },
             "min_samples_split": { "type": "int", "low": 2, "high": 20 },
             "min_samples_leaf": { "type": "int", "low": 1, "high": 20 },
             "max_features": { "type": "float", "low": 0.1, "high": 1.0 },
@@ -89,9 +89,9 @@
             "bootstrap": { "type": "categorical", "choices": [true] }
         },
         "gradientboosting": {
-            "n_estimators": { "type": "int", "low": 50, "high": 2000 },
+            "n_estimators": { "type": "int", "low": 50, "high": 1000 },
             "learning_rate": { "type": "float", "low": 1e-4, "high": 0.5,  "log": true },
-            "max_depth": { "type": "int", "low": 2, "high": 15 },
+            "max_depth": { "type": "int", "low": 2, "high": 10 },
             "subsample": { "type": "float", "low": 0.4, "high": 1.0 },
             "max_features": { "type": "float", "low": 0.1, "high": 1.0 },
             "min_samples_split": { "type": "int", "low": 2, "high": 20 },
@@ -110,39 +110,39 @@
             "max_iter": { "type": "int", "low": 1000, "high": 10000 }
         },
         "xgboost": {
-            "n_estimators": { "type": "int", "low": 50, "high": 2000 },
-            "max_depth": { "type": "int", "low": 2, "high": 15 },
-            "learning_rate": { "type": "float", "low": 1e-4, "high": 0.5, "log": true },
-            "subsample": { "type": "float", "low": 0.4,  "high": 1.0 },
+            "n_estimators": { "type": "int", "low": 50, "high": 1000 },
+            "max_depth": { "type": "int", "low": 2, "high": 12 },
+            "learning_rate": { "type": "float", "low": 1e-4, "high": 0.5,  "log": true },
+            "subsample": { "type": "float", "low": 0.4, "high": 1.0 },
             "colsample_bytree": { "type": "float", "low": 0.3, "high": 1.0 },
             "colsample_bylevel": { "type": "float", "low": 0.3, "high": 1.0 },
-            "min_child_weight": { "type": "int", "low": 1, "high": 20 },
-            "gamma": { "type": "float", "low": 0.0,  "high": 10.0 },
+            "min_child_weight": { "type": "int", "low": 1, "high": 10 },
+            "gamma": { "type": "float", "low": 0.0, "high": 6.0 },
             "reg_alpha": { "type": "float", "low": 1e-8, "high": 10.0, "log": true },
             "reg_lambda": { "type": "float", "low": 1e-8, "high": 10.0, "log": true },
             "max_delta_step": { "type": "int", "low": 0, "high": 10 }
         },
         "lightgbm": {
-            "n_estimators": { "type": "int", "low": 50, "high": 2000 },
-            "max_depth": { "type": "int", "low": 3, "high": 20 },
+            "n_estimators": { "type": "int", "low": 50, "high": 1000 },
+            "max_depth": { "type": "int", "low": 2, "high": 12 },
             "learning_rate": { "type": "float", "low": 1e-4, "high": 0.5,  "log": true },
-            "num_leaves": { "type": "int", "low": 20, "high": 500 },
+            "num_leaves": { "type": "int", "low": 20, "high": 250 },
             "subsample": { "type": "float", "low": 0.4, "high": 1.0 },
             "colsample_bytree": { "type": "float", "low": 0.3, "high": 1.0 },
-            "min_child_samples": { "type": "int", "low": 5, "high": 200 },
+            "min_child_samples": { "type": "int", "low": 5, "high": 120 },
             "reg_alpha": { "type": "float", "low": 1e-8, "high": 10.0, "log": true },
             "reg_lambda": { "type": "float", "low": 1e-8, "high": 10.0, "log": true },
             "min_split_gain": { "type": "float", "low": 0.0, "high": 1.0 },
-            "max_bin": { "type": "int", "low": 64, "high": 512 }
+            "max_bin": { "type": "int", "low": 64, "high": 256 }
         },
         "catboost": {
-            "iterations": { "type": "int", "low": 100, "high": 2000 },
-            "depth": { "type": "int", "low": 3, "high": 12 },
+            "iterations": { "type": "int", "low": 50, "high": 1000 },
+            "depth": { "type": "int", "low": 2, "high": 12 },
             "learning_rate": { "type": "float", "low": 1e-4, "high": 0.5,  "log": true },
             "l2_leaf_reg": { "type": "float", "low": 1e-3, "high": 10.0, "log": true },
-            "bagging_temperature": { "type": "float", "low": 0.0,  "high": 2.0 },
-            "border_count": { "type": "int", "low": 32, "high": 512 },
-            "random_strength": { "type": "float", "low": 0.0, "high": 10.0 }
+            "bagging_temperature": { "type": "float", "low": 0.0,  "high": 1.5 },
+            "border_count": { "type": "int", "low": 32,   "high": 255 },
+            "random_strength": { "type": "float", "low": 0.0,  "high": 6.0 }
         }
     }
 }

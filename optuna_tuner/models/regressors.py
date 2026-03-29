@@ -50,8 +50,31 @@ REGRESSORS = {
 }
 
 if _HAS_XGB:
-    REGRESSORS["xgboost"]  = {"class": XGBRegressor,      "params_fn": lambda trial, rs: build_params(trial, "xgboost",  "regression", rs)}
+    REGRESSORS["xgboost"] = {
+        "class": XGBRegressor,
+        "params_fn": lambda trial, rs: {
+            **build_params(trial, "xgboost", "regression", rs),
+            "verbosity": 0,
+            "n_jobs":    -1,
+        }
+    }
+
 if _HAS_LGB:
-    REGRESSORS["lightgbm"] = {"class": LGBMRegressor,     "params_fn": lambda trial, rs: build_params(trial, "lightgbm", "regression", rs)}
+    REGRESSORS["lightgbm"] = {
+        "class": LGBMRegressor,
+        "params_fn": lambda trial, rs: {
+            **build_params(trial, "lightgbm", "regression", rs),
+            "verbose": -1,
+            "n_jobs":  -1,
+        }
+    }
+
 if _HAS_CAT:
-    REGRESSORS["catboost"] = {"class": CatBoostRegressor, "params_fn": lambda trial, rs: build_params(trial, "catboost", "regression", rs)}
+    REGRESSORS["catboost"] = {
+        "class": CatBoostRegressor,
+        "params_fn": lambda trial, rs: {
+            **build_params(trial, "catboost", "regression", rs),
+            "verbose": False,
+            "silent":  True,
+        }
+    }

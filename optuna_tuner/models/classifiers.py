@@ -68,8 +68,31 @@ CLASSIFIERS = {
 }
 
 if _HAS_XGB:
-    CLASSIFIERS["xgboost"]  = {"class": XGBClassifier,      "params_fn": lambda trial, rs: build_params(trial, "xgboost",  "classification", rs)}
+    CLASSIFIERS["xgboost"] = {
+        "class": XGBClassifier,
+        "params_fn": lambda trial, rs: {
+            **build_params(trial, "xgboost", "classification", rs),
+            "verbosity": 0,
+            "n_jobs":    -1,
+        }
+    }
+
 if _HAS_LGB:
-    CLASSIFIERS["lightgbm"] = {"class": LGBMClassifier,     "params_fn": lambda trial, rs: build_params(trial, "lightgbm", "classification", rs)}
+    CLASSIFIERS["lightgbm"] = {
+        "class": LGBMClassifier,
+        "params_fn": lambda trial, rs: {
+            **build_params(trial, "lightgbm", "classification", rs),
+            "verbose": -1,
+            "n_jobs":  -1,
+        }
+    }
+
 if _HAS_CAT:
-    CLASSIFIERS["catboost"] = {"class": CatBoostClassifier, "params_fn": lambda trial, rs: build_params(trial, "catboost", "classification", rs)}
+    CLASSIFIERS["catboost"] = {
+        "class": CatBoostClassifier,
+        "params_fn": lambda trial, rs: {
+            **build_params(trial, "catboost", "classification", rs),
+            "verbose": False,
+            "silent":  True,
+        }
+    }

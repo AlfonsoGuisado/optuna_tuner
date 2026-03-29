@@ -2,7 +2,7 @@ from .tuner import model_tune
 from .models import CLASSIFIERS, REGRESSORS
 from .metrics import CLASSIFICATION_METRICS, REGRESSION_METRICS
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 
 __all__ = [
     "model_tune",

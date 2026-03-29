@@ -1,7 +1,7 @@
 # 🔍 optuna_tuner
 
 Library for automatic hyperparameter search using **Optuna**.  
-Install it with a single command and have `model_tune()` available in any project, both locally and in the cloud (Colab, Kaggle...).
+Install it with a single command and have `tune_model()` available in any project, both locally and in the cloud (Colab, Kaggle...).
 
 ---
 
@@ -18,10 +18,10 @@ optuna_tuner/
 │   │   ├── builder.py            ← reads JSONs and builds parameters for Optuna
 │   │   ├── classifiers.py        ← classifier registry
 │   │   └── regressors.py         ← regressor registry
-│   ├── __init__.py               ← public API: model_tune(), list_models(), list_metrics()
+│   ├── __init__.py               ← public API: tune_model(), list_models(), list_metrics()
 │   ├── callbacks.py              ← console progress per trial
 │   ├── metrics.py                ← loads metrics.json
-│   └── tuner.py                  ← main model_tune() function
+│   └── tuner.py                  ← main tune_model() function
 ├── examples/
 │   ├── ejemplo_clasificacion.py
 │   └── ejemplo_regresion.py
@@ -36,7 +36,7 @@ optuna_tuner/
 
 - `assets/` — JSON configuration files. These are the only files you need to edit if you want to change search ranges or add metrics, without touching any Python code.
 - `models/` — contains available classifiers and regressors. To add a new model, only this module needs to be modified.
-- `tuner.py` — this is where `model_tune()` lives, the core of the library.
+- `tuner.py` — this is where `tune_model()` lives, the core of the library.
 - `callbacks.py` — controls what gets printed to the console during the search.
 
 ---
@@ -72,9 +72,9 @@ pip install --upgrade git+https://github.com/AlfonsoGuisado/optuna_tuner.git
 ## 🚀 Basic Usage
 
 ```python
-from optuna_tuner import model_tune
+from optuna_tuner import tune_model
 
-result = model_tune(
+result = tune_model(
     X=X_train,
     y=y_train,
     model_name="xgboost",
@@ -89,7 +89,7 @@ print(result["best_value"])    # best score obtained
 
 ---
 
-## 📖 `model_tune()` Parameters
+## 📖 `tune_model()` Parameters
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
@@ -106,10 +106,10 @@ print(result["best_value"])    # best score obtained
 
 ---
 
-## 📦 What `model_tune()` Returns
+## 📦 What `tune_model()` Returns
 
 ```python
-result = model_tune(...)
+result = tune_model(...)
 
 result["best_params"]   # dict with the best hyperparameters, ready to use
 result["best_value"]    # best score obtained during the search
@@ -121,7 +121,7 @@ result["metric"]        # metric that was used
 ### Using the trained model
 
 ```python
-result = model_tune(X_train, y_train, model_name="xgboost", task="classification", n_trials=100)
+result = tune_model(X_train, y_train, model_name="xgboost", task="classification", n_trials=100)
 
 best_model = result["best_model"]
 best_model.fit(X_train, y_train)
@@ -233,7 +233,7 @@ Optuna searches for the best hyperparameters within the ranges defined in `searc
 These parameters are passed via the `model_params` argument and take **priority** over any value found by Optuna.
 
 ```python
-result = model_tune(
+result = tune_model(
     X=X_train,
     y=y_train,
     model_name="xgboost",
@@ -466,7 +466,7 @@ model_params={
 
 ### 🔴 RandomForest / ExtraTrees / GradientBoosting
 
-Sklearn **detects the problem type automatically** based on the `task` you pass to `model_tune()`. You only need `model_params` in special cases:
+Sklearn **detects the problem type automatically** based on the `task` you pass to `tune_model()`. You only need `model_params` in special cases:
 
 **Imbalanced classes**
 ```python
@@ -539,7 +539,7 @@ import pandas as pd
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
-from optuna_tuner import model_tune
+from optuna_tuner import tune_model
 
 X_raw, y_raw = make_classification(
     n_samples=1000, n_features=20, n_classes=3, n_informative=10, random_state=42
@@ -548,7 +548,7 @@ X = pd.DataFrame(X_raw)
 y = pd.Series(y_raw)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-result = model_tune(
+result = tune_model(
     X=X_train,
     y=y_train,
     model_name="xgboost",
@@ -578,14 +578,14 @@ from sklearn.datasets import make_regression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 import numpy as np
-from optuna_tuner import model_tune
+from optuna_tuner import tune_model
 
 X_raw, y_raw = make_regression(n_samples=1000, n_features=20, random_state=42)
 X = pd.DataFrame(X_raw)
 y = pd.Series(y_raw)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-result = model_tune(
+result = tune_model(
     X=X_train,
     y=y_train,
     model_name="lightgbm",

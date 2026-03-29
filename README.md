@@ -1,9 +1,9 @@
 # 🔍 optuna_tuner
 
-Personal library for automatic hyperparameter search using **Optuna**.  
-Install it with a single command and have `model_tune()` available in any project, both locally and in the cloud (Colab, Kaggle...).
+Library for automatic hyperparameter search using **Optuna**.  
+Install it with a single command and have `tune_model()` available in any project, both locally and in the cloud (Colab, Kaggle...).
 
-> **Current version: 0.2.4**
+> **Current version: 0.2.6**
 
 ---
 
@@ -20,10 +20,10 @@ optuna_tuner/
 │   │   ├── builder.py            ← reads JSONs and builds Optuna parameter spaces
 │   │   ├── classifiers.py        ← classifier registry
 │   │   └── regressors.py         ← regressor registry
-│   ├── __init__.py               ← public API: model_tune(), list_models(), list_metrics()
+│   ├── __init__.py               ← public API: tune_model(), list_models(), list_metrics()
 │   ├── callbacks.py              ← console progress per trial
 │   ├── metrics.py                ← loads metrics.json
-│   └── tuner.py                  ← main model_tune() function
+│   └── tuner.py                  ← main tune_model() function
 ├── examples/
 │   ├── ejemplo_clasificacion.py
 │   └── ejemplo_regresion.py
@@ -38,7 +38,7 @@ optuna_tuner/
 
 - `assets/` — JSON configuration files. The only files you need to edit to change search ranges or add new metrics, without touching any Python code.
 - `models/` — contains all available classifiers and regressors. To add a new model, only this module needs to be modified.
-- `tuner.py` — where `model_tune()` lives, the core of the library.
+- `tuner.py` — where `tune_model()` lives, the core of the library.
 - `callbacks.py` — controls what gets printed to the console during the search.
 
 ---
@@ -74,9 +74,9 @@ pip install --upgrade git+https://github.com/AlfonsoGuisado/optuna_tuner.git
 ## 🚀 Basic Usage
 
 ```python
-from optuna_tuner import model_tune
+from optuna_tuner import tune_model
 
-result = model_tune(
+result = tune_model(
     X=X_train,
     y=y_train,
     model_name="xgboost",
@@ -88,6 +88,7 @@ result = model_tune(
         "num_class":   y_train.nunique(),
         "eval_metric": "mlogloss",
         "tree_method": "hist",
+        "n_jobs":      -1,
     }
 )
 
@@ -97,7 +98,7 @@ print(result["best_value"])    # best score obtained
 
 ---
 
-## 📖 `model_tune()` Parameters
+## 📖 `tune_model()` Parameters
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
@@ -117,10 +118,10 @@ print(result["best_value"])    # best score obtained
 
 ---
 
-## 📦 What `model_tune()` Returns
+## 📦 What `tune_model()` Returns
 
 ```python
-result = model_tune(...)
+result = tune_model(...)
 
 result["best_params"]   # dict with the best hyperparameters, ready to use
 result["best_value"]    # best score obtained during the search
@@ -132,7 +133,7 @@ result["metric"]        # metric that was used
 ### Using the trained model
 
 ```python
-result = model_tune(...)
+result = tune_model(...)
 
 best_model = result["best_model"]
 best_model.fit(X_train, y_train)
@@ -146,7 +147,7 @@ y_pred = best_model.predict(X_test)
 If the process crashes or the kernel restarts mid-search, you can resume automatically from where it left off using `storage` and `study_name`:
 
 ```python
-result = model_tune(
+result = tune_model(
     X=X_train,
     y=y_train,
     model_name="randomforest",
@@ -155,12 +156,12 @@ result = model_tune(
     n_trials=50,
     model_params={"class_weight": "balanced"},
     study_name="rf_classification_v1",          # ← name of the study
-    storage="sqlite:///optuna_studies.db",       # ← file where trials are saved
+    storage="sqlite:///optuna_studies.db",       # ← file where trials are saved on disk
     verbose=True,
 )
 ```
 
-If the process crashes and you re-run the exact same cell, Optuna will detect that `rf_classification_v1` already exists in the `.db` file, load the completed trials and **continue from where it left off**. No trial is lost.
+If the process crashes and you re-run the exact same cell, Optuna will detect that `rf_classification_v1` already exists in the `.db` file, load the completed trials and **continue from where it left off**. No trial is ever lost.
 
 ### Checking a saved study
 
@@ -184,7 +185,7 @@ print(f"Best params      : {study.best_params}")
 Use `timeout` to set a maximum search duration in seconds. The search will stop after that time regardless of how many trials remain, and will always return the best result found so far:
 
 ```python
-result = model_tune(
+result = tune_model(
     X=X_train,
     y=y_train,
     model_name="xgboost",
@@ -199,13 +200,13 @@ result = model_tune(
 )
 ```
 
-Recommended timeouts:
+Recommended timeouts based on dataset size:
 
 | Dataset size | Recommended timeout |
 |---|---|
-| Small (< 10k rows) | 600–1800 seconds (10–30 min) |
-| Medium (10k–100k rows) | 1800–7200 seconds (30 min–2 hours) |
-| Large (> 100k rows) | 7200–18000 seconds (2–5 hours) |
+| Small (< 10k rows) | 600 – 1800 seconds (10 – 30 min) |
+| Medium (10k – 100k rows) | 1800 – 7200 seconds (30 min – 2 hours) |
+| Large (> 100k rows) | 7200 – 18000 seconds (2 – 5 hours) |
 
 ---
 
@@ -311,7 +312,7 @@ Optuna searches for the best hyperparameters within the ranges defined in `searc
 
 These are passed via `model_params` and take **priority** over any value found by Optuna.
 
-> **Note:** Internal logging parameters (`verbose`, `verbosity`, `silent`) are already handled automatically by the library for XGBoost, LightGBM and CatBoost. You never need to include them in `model_params`.
+> **Note:** Internal logging parameters (`verbose`, `verbosity`, `silent`, `logging_level`, `verbose_eval`) are automatically handled by the library for all boosting models. You never need to include them in `model_params` — they will be silently ignored even if passed.
 
 ---
 
@@ -517,7 +518,7 @@ model_params={
 
 ### 🔴 RandomForest / ExtraTrees / GradientBoosting
 
-Sklearn detects the problem type automatically based on the `task` you pass to `model_tune()`. You only need `model_params` in special cases:
+Sklearn detects the problem type automatically based on the `task` you pass to `tune_model()`. You only need `model_params` in special cases:
 
 **Imbalanced classes**
 ```python
@@ -590,7 +591,7 @@ import pandas as pd
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
-from optuna_tuner import model_tune
+from optuna_tuner import tune_model
 
 X_raw, y_raw = make_classification(
     n_samples=1000, n_features=20, n_classes=3, n_informative=10, random_state=42
@@ -599,7 +600,7 @@ X = pd.DataFrame(X_raw)
 y = pd.Series(y_raw)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-result = model_tune(
+result = tune_model(
     X=X_train,
     y=y_train,
     model_name="xgboost",
@@ -616,6 +617,7 @@ result = model_tune(
     study_name="xgb_clf_v1",
     storage="sqlite:///optuna_studies.db",
     timeout=3600,
+    verbose=True,
 )
 
 model = result["best_model"]
@@ -631,14 +633,14 @@ from sklearn.datasets import make_regression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 import numpy as np
-from optuna_tuner import model_tune
+from optuna_tuner import tune_model
 
 X_raw, y_raw = make_regression(n_samples=1000, n_features=20, random_state=42)
 X = pd.DataFrame(X_raw)
 y = pd.Series(y_raw)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-result = model_tune(
+result = tune_model(
     X=X_train,
     y=y_train,
     model_name="lightgbm",
@@ -653,6 +655,7 @@ result = model_tune(
     study_name="lgb_reg_v1",
     storage="sqlite:///optuna_studies.db",
     timeout=1800,
+    verbose=True,
 )
 
 model = result["best_model"]
@@ -665,9 +668,9 @@ print(f"R²   : {r2_score(y_test, y_pred):.4f}")
 ### Imbalanced Multiclass with CatBoost
 
 ```python
-from optuna_tuner import model_tune
+from optuna_tuner import tune_model
 
-result = model_tune(
+result = tune_model(
     X=X_train,
     y=y_train,
     model_name="catboost",
@@ -682,6 +685,29 @@ result = model_tune(
     study_name="catboost_clf_v1",
     storage="sqlite:///optuna_studies.db",
     timeout=3600,
+    verbose=True,
+)
+```
+
+### Balanced Binary Classification with RandomForest
+
+```python
+from optuna_tuner import tune_model
+
+result = tune_model(
+    X=X_train,
+    y=y_train,
+    model_name="randomforest",
+    task="classification",
+    metric="roc_auc",
+    n_trials=100,
+    model_params={
+        "class_weight": "balanced",
+    },
+    study_name="rf_binary_v1",
+    storage="sqlite:///optuna_studies.db",
+    timeout=1800,
+    verbose=True,
 )
 ```
 

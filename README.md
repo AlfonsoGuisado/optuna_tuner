@@ -3,7 +3,7 @@
 Library for automatic hyperparameter search using **Optuna**.  
 Install it with a single command and have `tune_model()` available in any project, both locally and in the cloud (Colab, Kaggle...).
 
-> **Current version: 0.2.6**
+> **Current version: 0.2.0**
 
 ---
 
@@ -106,7 +106,7 @@ print(result["best_value"])    # best score obtained
 | `y` | Series / array | ✅ | — | Labels or target |
 | `model_name` | str | ✅ | — | Model name (see model table below) |
 | `task` | str | ✅ | — | `'classification'` or `'regression'` |
-| `n_trials` | int | ✅ | — | Number of Optuna trials |
+| `n_trials` | int | ✅ | — | Number of **successful** Optuna trials |
 | `model_params` | dict | ✅ | — | Fixed model parameters not searched by Optuna. Pass `{}` if none needed |
 | `metric` | str | ❌ | auto | Metric to optimize |
 | `cv_folds` | int | ❌ | `5` | Number of cross-validation folds |
@@ -115,6 +115,8 @@ print(result["best_value"])    # best score obtained
 | `study_name` | str | ❌ | auto | Name for the Optuna study. Required when using `storage` |
 | `storage` | str | ❌ | `None` | SQLite path to persist trials on disk and resume if the process crashes |
 | `timeout` | int | ❌ | `None` | Maximum search time in seconds. Stops after this time regardless of remaining trials |
+
+> **Important:** `n_trials` counts only **successfully completed trials**. Failed trials are automatically retried and do not count towards the total.
 
 ---
 
@@ -153,7 +155,7 @@ result = tune_model(
     model_name="randomforest",
     task="classification",
     metric="f1_micro",
-    n_trials=50,
+    n_trials=200,
     model_params={"class_weight": "balanced"},
     study_name="rf_classification_v1",          # ← name of the study
     storage="sqlite:///optuna_studies.db",       # ← file where trials are saved on disk
@@ -163,26 +165,103 @@ result = tune_model(
 
 If the process crashes and you re-run the exact same cell, Optuna will detect that `rf_classification_v1` already exists in the `.db` file, load the completed trials and **continue from where it left off**. No trial is ever lost.
 
-### Checking a saved study
+---
+
+## 🗄️ Inspecting the SQLite Database
+
+Every time you use `storage`, Optuna saves all trials to a `.db` file in the same folder as your notebook. Here is everything you can do with it.
+
+### List all studies saved in the database
 
 ```python
 import optuna
 
+studies = optuna.get_all_study_names(storage="sqlite:///optuna_studies.db")
+print(studies)
+# ['rf_classification_v1', 'xgb_clf_v1', 'catboost_classification_v1']
+```
+
+### Load a specific study
+
+```python
 study = optuna.load_study(
-    study_name="rf_classification_v1",
+    study_name="catboost_classification_v1",
     storage="sqlite:///optuna_studies.db",
 )
+```
 
-print(f"Completed trials : {len(study.trials)}")
-print(f"Best value       : {study.best_value:.6f}")
-print(f"Best params      : {study.best_params}")
+### Check trial counts and states
+
+```python
+df = study.trials_dataframe()
+print(df["state"].value_counts())
+# COMPLETE    28
+# FAILED       2
+```
+
+### See all trials with their scores and duration
+
+```python
+df = study.trials_dataframe()
+print(df[["number", "value", "state", "duration"]].to_string())
+```
+
+### See the best result
+
+```python
+print(f"Best value  : {study.best_value:.6f}")
+print(f"Best trial  : {study.best_trial.number}")
+print(f"Best params : {study.best_params}")
+```
+
+### See the top 5 trials
+
+```python
+df = study.trials_dataframe()
+top5 = (
+    df[df["state"] == "COMPLETE"]
+    .sort_values("value", ascending=False)
+    .head(5)
+)
+print(top5)
+```
+
+### See the parameters tested in every trial
+
+```python
+df = study.trials_dataframe()
+
+# columns starting with "params_" contain the hyperparameters of each trial
+param_cols = [col for col in df.columns if col.startswith("params_")]
+print(df[["number", "value"] + param_cols].to_string())
+```
+
+### See the full detail of a specific trial
+
+```python
+trial = study.trials[10]   # trial number 10
+
+print(f"Number   : {trial.number}")
+print(f"State    : {trial.state}")
+print(f"Score    : {trial.value}")
+print(f"Duration : {trial.duration}")
+print(f"Params   :")
+for k, v in trial.params.items():
+    print(f"  {k}: {v}")
+```
+
+### Export all trials to a CSV
+
+```python
+df = study.trials_dataframe()
+df.to_csv("optuna_trials.csv", index=False)
 ```
 
 ---
 
 ## ⏱️ Controlling Search Time
 
-Use `timeout` to set a maximum search duration in seconds. The search will stop after that time regardless of how many trials remain, and will always return the best result found so far:
+Use `timeout` to set a maximum search duration in seconds. The search will stop after that time regardless of how many successful trials remain, and will always return the best result found so far:
 
 ```python
 result = tune_model(
@@ -191,7 +270,7 @@ result = tune_model(
     model_name="xgboost",
     task="classification",
     metric="f1_micro",
-    n_trials=50,
+    n_trials=500,
     model_params={...},
     study_name="xgb_clf_v1",
     storage="sqlite:///optuna_studies.db",
@@ -345,20 +424,20 @@ y_train.value_counts(normalize=True)
 **Binary classification**
 ```python
 model_params={
-    "objective":   "binary:logistic",   # output: probability between 0 and 1
-    "eval_metric": "logloss",           # internal evaluation metric
-    "tree_method": "hist",              # fastest tree algorithm on CPU
-    "n_jobs":      -1,                  # use all available cores
+    "objective":   "binary:logistic",
+    "eval_metric": "logloss",
+    "tree_method": "hist",
+    "n_jobs":      -1,
 }
 ```
 
 **Multiclass classification**
 ```python
 model_params={
-    "objective":   "multi:softmax",     # output: predicted class as integer
+    "objective":   "multi:softmax",
   # "objective":  "multi:softprob",    # alternative: output probabilities per class
-    "num_class":   y_train.nunique(),   # number of classes — REQUIRED for multiclass
-    "eval_metric": "mlogloss",          # internal multiclass metric
+    "num_class":   y_train.nunique(),   # REQUIRED for multiclass
+    "eval_metric": "mlogloss",
     "tree_method": "hist",
     "n_jobs":      -1,
 }
@@ -367,9 +446,9 @@ model_params={
 **Regression**
 ```python
 model_params={
-    "objective":   "reg:squarederror",      # MSE regression — most common
-  # "objective":  "reg:absoluteerror",     # MAE regression — more robust to outliers
-  # "objective":  "reg:pseudohubererror",  # Huber — balance between MSE and MAE
+    "objective":   "reg:squarederror",
+  # "objective":  "reg:absoluteerror",
+  # "objective":  "reg:pseudohubererror",
     "eval_metric": "rmse",
     "tree_method": "hist",
     "n_jobs":      -1,
@@ -390,7 +469,7 @@ model_params={
 ```python
 model_params={
     "tree_method": "gpu_hist",
-    "objective":   "binary:logistic",   # or whichever fits your problem
+    "objective":   "binary:logistic",
 }
 ```
 
@@ -429,10 +508,10 @@ model_params={
 **Regression**
 ```python
 model_params={
-    "objective": "regression",          # MSE — most common
-  # "objective": "regression_l1",      # MAE — more robust to outliers
-  # "objective": "huber",              # Huber — balance between MSE and MAE
-  # "objective": "mape",               # mean absolute percentage error
+    "objective": "regression",
+  # "objective": "regression_l1",
+  # "objective": "huber",
+  # "objective": "mape",
     "metric":    "rmse",
     "n_jobs":    -1,
 }
@@ -442,7 +521,6 @@ model_params={
 ```python
 model_params={
     "is_unbalance": True,
-  # alternative:
   # "class_weight": "balanced",
 }
 ```
@@ -479,20 +557,19 @@ model_params={
 **Regression**
 ```python
 model_params={
-    "loss_function": "RMSE",            # MSE — most common
-  # "loss_function": "MAE",            # more robust to outliers
-  # "loss_function": "Huber",          # balance between MSE and MAE
-  # "loss_function": "MAPE",           # percentage error
+    "loss_function": "RMSE",
+  # "loss_function": "MAE",
+  # "loss_function": "Huber",
+  # "loss_function": "MAPE",
     "eval_metric":   "RMSE",
 }
 ```
 
 **With categorical columns**
 ```python
-# CatBoost natively handles categorical columns without prior encoding
 model_params={
-    "cat_features":  [0, 2, 5],                          # by column index
-  # "cat_features":  ["city", "product", "category"],    # or by column name
+    "cat_features":  [0, 2, 5],
+  # "cat_features":  ["city", "product", "category"],
     "loss_function": "MultiClass",
     "eval_metric":   "Accuracy",
 }
@@ -518,14 +595,14 @@ model_params={
 
 ### 🔴 RandomForest / ExtraTrees / GradientBoosting
 
-Sklearn detects the problem type automatically based on the `task` you pass to `tune_model()`. You only need `model_params` in special cases:
+Sklearn detects the problem type automatically. You only need `model_params` in special cases:
 
 **Imbalanced classes**
 ```python
 # RandomForest and ExtraTrees
 model_params={
-    "class_weight": "balanced",             # weights each class inversely to its frequency
-  # "class_weight": "balanced_subsample",   # same but recalculated per tree
+    "class_weight": "balanced",
+  # "class_weight": "balanced_subsample",
 }
 
 # GradientBoosting does not have class_weight
@@ -543,9 +620,9 @@ model_params={
 **Classification**
 ```python
 model_params={
-    "probability":  True,               # required to use predict_proba()
-    "class_weight": "balanced",         # imbalanced classes
-    "cache_size":   1000,               # kernel cache in MB — more = faster with large datasets
+    "probability":  True,
+    "class_weight": "balanced",
+    "cache_size":   1000,
 }
 ```
 
@@ -558,7 +635,7 @@ model_params={
 
 | Parameter | Options | Description |
 |---|---|---|
-| `probability` | `True` / `False` | Enables `predict_proba()` — SVC only, adds computational cost |
+| `probability` | `True` / `False` | Enables `predict_proba()` — SVC only |
 | `class_weight` | `"balanced"` · dict | Per-class weights |
 | `cache_size` | integer (MB) | Kernel cache. More MB = faster with large datasets |
 
@@ -566,12 +643,10 @@ model_params={
 
 ### 🟡 Linear Models (Lasso, Ridge, ElasticNet)
 
-Rarely need `model_params`. Only in very specific cases:
-
 ```python
 model_params={
-    "fit_intercept": False,             # if data is already centered at 0
-    "positive":      True,              # forces all coefficients to be positive
+    "fit_intercept": False,
+    "positive":      True,
 }
 ```
 

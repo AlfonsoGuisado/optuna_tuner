@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import warnings
 from typing import Any
+import time
 
 import numpy as np
 import optuna
@@ -137,13 +138,24 @@ def tune_model(
             print(f"  Study already has {completed} completed trials. Nothing to run.")
             print(f"  To run more trials increase n_trials above {completed}.\n")
     else:
-        study.optimize(
-            objective,
-            n_trials=remaining,
-            timeout=timeout,
-            callbacks=[ProgressCallback(n_trials, completed, verbose=verbose)],
-            show_progress_bar=False,
-        )
+        start_time = time.time()
+        while True:
+            completed_now = len([
+                t for t in study.trials
+                if t.state == optuna.trial.TrialState.COMPLETE
+            ])
+            if completed_now >= n_trials:
+                break
+            if timeout is not None and (time.time() - start_time) >= timeout:
+                break
+            study.optimize(
+                objective,
+                n_trials=1,
+                timeout=None,
+                callbacks=[ProgressCallback(n_trials, completed, verbose=verbose)],
+                show_progress_bar=False,
+                catch=(Exception,),
+            )
 
     # ── Result ─────────────────────────────────────────────────────────────────
     best_params = study.best_params

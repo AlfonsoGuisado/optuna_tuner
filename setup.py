@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="optuna_tuner",
-    version="0.1.9",
+    version="0.2.0",
     description="Búsqueda automática de hiperparámetros con Optuna",
     packages=find_packages(),
     python_requires=">=3.9",

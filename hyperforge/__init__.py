@@ -1,11 +1,11 @@
-from .tuner import tune_model
+from .tuner import forge_model
 from .models import CLASSIFIERS, REGRESSORS
 from .metrics import CLASSIFICATION_METRICS, REGRESSION_METRICS
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 __all__ = [
-    "tune_model",
+    "forge_model",
     "CLASSIFIERS",
     "REGRESSORS",
     "CLASSIFICATION_METRICS",

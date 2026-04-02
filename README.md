@@ -1,7 +1,7 @@
-# 🔍 optuna_tuner
+# 🔍 hyperforge
 
 Library for automatic hyperparameter search using **Optuna**.  
-Install it with a single command and have `tune_model()` available in any project, both locally and in the cloud (Colab, Kaggle...).
+Install it with a single command and have `forge_model()` available in any project, both locally and in the cloud (Colab, Kaggle...).
 
 > **Current version: 0.2.0**
 
@@ -10,8 +10,8 @@ Install it with a single command and have `tune_model()` available in any projec
 ## 📁 Repository Structure
 
 ```
-optuna_tuner/
-├── optuna_tuner/
+hyperforge/
+├── hyperforge/
 │   ├── assets/
 │   │   ├── metrics.json          ← available metrics and their configuration
 │   │   └── search_spaces.json    ← search ranges for each model
@@ -20,10 +20,10 @@ optuna_tuner/
 │   │   ├── builder.py            ← reads JSONs and builds Optuna parameter spaces
 │   │   ├── classifiers.py        ← classifier registry
 │   │   └── regressors.py         ← regressor registry
-│   ├── __init__.py               ← public API: tune_model(), list_models(), list_metrics()
+│   ├── __init__.py               ← public API: forge_model(), list_models(), list_metrics()
 │   ├── callbacks.py              ← console progress per trial
 │   ├── metrics.py                ← loads metrics.json
-│   └── tuner.py                  ← main tune_model() function
+│   └── tuner.py                  ← main forge_model() function
 ├── examples/
 │   ├── ejemplo_clasificacion.py
 │   └── ejemplo_regresion.py
@@ -38,7 +38,7 @@ optuna_tuner/
 
 - `assets/` — JSON configuration files. The only files you need to edit to change search ranges or add new metrics, without touching any Python code.
 - `models/` — contains all available classifiers and regressors. To add a new model, only this module needs to be modified.
-- `tuner.py` — where `tune_model()` lives, the core of the library.
+- `tuner.py` — where `forge_model()` lives, the core of the library.
 - `callbacks.py` — controls what gets printed to the console during the search.
 
 ---
@@ -48,25 +48,25 @@ optuna_tuner/
 ### Local project (VSCode)
 
 ```bash
-pip install git+https://github.com/AlfonsoGuisado/optuna_tuner.git
+pip install git+https://github.com/AlfonsoGuisado/hyperforge.git
 ```
 
 With boosting libraries (XGBoost, LightGBM, CatBoost):
 
 ```bash
-pip install "git+https://github.com/AlfonsoGuisado/optuna_tuner.git#egg=optuna_tuner[boosting]"
+pip install "git+https://github.com/AlfonsoGuisado/hyperforge.git#egg=hyperforge[boosting]"
 ```
 
 ### Cloud (Google Colab, Kaggle)
 
 ```python
-!pip install git+https://github.com/AlfonsoGuisado/optuna_tuner.git
+!pip install git+https://github.com/AlfonsoGuisado/hyperforge.git
 ```
 
 ### Update to the latest version
 
 ```bash
-pip install --upgrade git+https://github.com/AlfonsoGuisado/optuna_tuner.git
+pip install --upgrade git+https://github.com/AlfonsoGuisado/hyperforge.git
 ```
 
 ---
@@ -74,9 +74,9 @@ pip install --upgrade git+https://github.com/AlfonsoGuisado/optuna_tuner.git
 ## 🚀 Basic Usage
 
 ```python
-from optuna_tuner import tune_model
+from hyperforge import forge_model
 
-result = tune_model(
+result = forge_model(
     X=X_train,
     y=y_train,
     model_name="xgboost",
@@ -98,7 +98,7 @@ print(result["best_value"])    # best score obtained
 
 ---
 
-## 📖 `tune_model()` Parameters
+## 📖 `forge_model()` Parameters
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
@@ -120,10 +120,10 @@ print(result["best_value"])    # best score obtained
 
 ---
 
-## 📦 What `tune_model()` Returns
+## 📦 What `forge_model()` Returns
 
 ```python
-result = tune_model(...)
+result = forge_model(...)
 
 result["best_params"]   # dict with the best hyperparameters, ready to use
 result["best_value"]    # best score obtained during the search
@@ -135,7 +135,7 @@ result["metric"]        # metric that was used
 ### Using the trained model
 
 ```python
-result = tune_model(...)
+result = forge_model(...)
 
 best_model = result["best_model"]
 best_model.fit(X_train, y_train)
@@ -149,7 +149,7 @@ y_pred = best_model.predict(X_test)
 If the process crashes or the kernel restarts mid-search, you can resume automatically from where it left off using `storage` and `study_name`:
 
 ```python
-result = tune_model(
+result = forge_model(
     X=X_train,
     y=y_train,
     model_name="randomforest",
@@ -264,7 +264,7 @@ df.to_csv("optuna_trials.csv", index=False)
 Use `timeout` to set a maximum search duration in seconds. The search will stop after that time regardless of how many successful trials remain, and will always return the best result found so far:
 
 ```python
-result = tune_model(
+result = forge_model(
     X=X_train,
     y=y_train,
     model_name="xgboost",
@@ -323,7 +323,7 @@ Recommended timeouts based on dataset size:
 `*` requires installation with `[boosting]`
 
 ```python
-from optuna_tuner import list_models
+from hyperforge import list_models
 
 list_models()                        # all models
 list_models(task="classification")   # classification only
@@ -365,7 +365,7 @@ list_models(task="regression")       # regression only
 > Regression metrics are negative because Optuna always maximizes internally. A lower RMSE is better, and its higher negative value is too.
 
 ```python
-from optuna_tuner import list_metrics
+from hyperforge import list_metrics
 
 list_metrics()                        # all metrics
 list_metrics(task="classification")   # classification only
@@ -377,7 +377,7 @@ list_metrics(task="regression")       # regression only
 ## 🔎 View a Model's Search Ranges
 
 ```python
-from optuna_tuner.models.builder import SEARCH_SPACES
+from hyperforge.models.builder import SEARCH_SPACES
 import json
 
 print(json.dumps(SEARCH_SPACES["classification"]["xgboost"], indent=2))
@@ -666,7 +666,7 @@ import pandas as pd
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
-from optuna_tuner import tune_model
+from hyperforge import forge_model
 
 X_raw, y_raw = make_classification(
     n_samples=1000, n_features=20, n_classes=3, n_informative=10, random_state=42
@@ -675,7 +675,7 @@ X = pd.DataFrame(X_raw)
 y = pd.Series(y_raw)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-result = tune_model(
+result = forge_model(
     X=X_train,
     y=y_train,
     model_name="xgboost",
@@ -708,14 +708,14 @@ from sklearn.datasets import make_regression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 import numpy as np
-from optuna_tuner import tune_model
+from hyperforge import forge_model
 
 X_raw, y_raw = make_regression(n_samples=1000, n_features=20, random_state=42)
 X = pd.DataFrame(X_raw)
 y = pd.Series(y_raw)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-result = tune_model(
+result = forge_model(
     X=X_train,
     y=y_train,
     model_name="lightgbm",
@@ -743,9 +743,9 @@ print(f"R²   : {r2_score(y_test, y_pred):.4f}")
 ### Imbalanced Multiclass with CatBoost
 
 ```python
-from optuna_tuner import tune_model
+from hyperforge import forge_model
 
-result = tune_model(
+result = forge_model(
     X=X_train,
     y=y_train,
     model_name="catboost",
@@ -767,9 +767,9 @@ result = tune_model(
 ### Balanced Binary Classification with RandomForest
 
 ```python
-from optuna_tuner import tune_model
+from hyperforge import forge_model
 
-result = tune_model(
+result = forge_model(
     X=X_train,
     y=y_train,
     model_name="randomforest",
@@ -790,7 +790,7 @@ result = tune_model(
 
 ## ➕ How to Add a New Model
 
-**1.** Add its search space in `optuna_tuner/assets/search_spaces.json`:
+**1.** Add its search space in `hyperforge/assets/search_spaces.json`:
 
 ```json
 "classification": {
@@ -801,7 +801,7 @@ result = tune_model(
 }
 ```
 
-**2.** Add its entry in `optuna_tuner/models/classifiers.py`:
+**2.** Add its entry in `hyperforge/models/classifiers.py`:
 
 ```python
 from mylibrary import MyModel

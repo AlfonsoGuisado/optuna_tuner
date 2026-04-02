@@ -1,13 +1,13 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="optuna_tuner",
-    version="0.2.0",
+    name="hyperforge",
+    version="0.2.1",
     description="Búsqueda automática de hiperparámetros con Optuna",
     packages=find_packages(),
     python_requires=">=3.9",
     package_data={
-        "optuna_tuner": ["assets/*.json"],
+        "hyperforge": ["assets/*.json"],
     },
     install_requires=[
         "optuna>=3.0",

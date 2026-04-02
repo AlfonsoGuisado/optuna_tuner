@@ -3,7 +3,7 @@ from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 
-from optuna_tuner import tune_model, list_models, list_metrics
+from hyperforge import forge_model, list_models, list_metrics
 
 # ── Datos ──────────────────────────────────────────────────────────────────────
 X_raw, y_raw = make_classification(
@@ -19,7 +19,7 @@ list_models(task="classification")
 list_metrics(task="classification")
 
 # ── Afinar modelo ──────────────────────────────────────────────────────────────
-result = tune_model(
+result = forge_model(
     X=X_train,
     y=y_train,
     model_name="randomforest",

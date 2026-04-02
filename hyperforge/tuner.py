@@ -20,7 +20,7 @@ warnings.filterwarnings("ignore")
 _INTERNAL_KEYS = {"verbose", "verbosity", "silent", "logging_level", "verbose_eval"}
 
 
-def tune_model(
+def forge_model(
     X: pd.DataFrame,
     y: pd.Series | np.ndarray,
     model_name: str,
